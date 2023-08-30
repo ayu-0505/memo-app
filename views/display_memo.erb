@@ -1,0 +1,16 @@
+<%# @output_memo %>
+<% id_array = [] %>
+<% @json.each do |memo| %>
+  <% id_array << memo[:memo_id] %>
+  <% end %>
+  <% num = id_array.find_index { |id| id == @url_id } %>
+<br>
+ <div class="container border m-2"><%= @json[num][:title] %></div>
+<div class="container border m-2"><%= @json[num][:content] %></div>
+<a href="/memos/<%= @url_id %>/edit"><button class="btn btn-primary m-2">変更</button></a>
+<form method="post" action="/memos/del">
+  <input type="hidden" name="id" value="<%= @url_id %>">
+  <input type="hidden" name="_method" value="delete">
+  <button type="submit" class="btn btn-primary m-2">削除</button>
+</form>
+<a href="/memo-top"><button class="btn btn-primary m-2">戻る</button></a>

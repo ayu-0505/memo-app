@@ -1,0 +1,12 @@
+button {
+  margin: 30px;
+  letter-spacing: 5px;
+}
+h1 {
+  color: #3cb371;
+}
+
+label {
+  color: gray;
+  font-size: 14px;
+}
