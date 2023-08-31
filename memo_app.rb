@@ -39,13 +39,12 @@ helpers do
 end
 
 get '/memo-top' do
-  json = Memo.open_json
-  memos = []
-  json.each do |memo|
-    memos << Memo.new(memo[:memo_id], memo[:title], memo[:content])
+  all_memos = []
+  Memo.open_json.each do |memo|
+    all_memos << Memo.new(memo[:memo_id], memo[:title], memo[:content])
   end
   @memo_table = '<ul>'
-  memos.each { |memo| @memo_table += "<li><a href=\"/memos/#{memo.memo_id}\">#{memo.title}</a></li>" }
+  all_memos.each { |memo| @memo_table += "<li><a href=\"/memos/#{memo.memo_id}\">#{memo.title}</a></li>" }
   @memo_table += '</ul>'
 
   erb :index
@@ -58,45 +57,47 @@ end
 post '/memos/new' do
   unless params[:title] == ''
     new_memo = Memo.new(SecureRandom.uuid, escape(params[:title]), escape(params[:content]))
-    new_memo_for_json = {}
-    new_memo_for_json[:memo_id] = new_memo.memo_id
-    new_memo_for_json[:title] = new_memo.title
-    new_memo_for_json[:content] = new_memo.content
-    json = Memo.open_json
-    json.push(new_memo_for_json)
-    Memo.updata_json(json)
+    new_memo_to_list = {}
+    new_memo_to_list[:memo_id] = new_memo.memo_id
+    new_memo_to_list[:title] = new_memo.title
+    new_memo_to_list[:content] = new_memo.content
+    all_memos = Memo.open_json
+    all_memos.push(new_memo_to_list)
+    Memo.updata_json(all_memos)
   end
 
   redirect '/memo-top'
 end
 
 get '/memos/:id' do
-  @url_id = params[:id]
-  @json = Memo.open_json
+  display_memo = Memo.open_json.find { |memo| memo[:memo_id] == params[:id] }
+  @memo_id = display_memo[:memo_id]
+  @title = display_memo[:title]
+  @content = display_memo[:content]
 
   erb :display_memo
 end
 
 delete '/memos/del' do
-  json = Memo.open_json
-  json.delete_if { |memo| memo[:memo_id] == params[:id] }
-  Memo.updata_json(json)
+  all_memos = Memo.open_json
+  all_memos.delete_if { |memo| memo[:memo_id] == params[:id] }
+  Memo.updata_json(all_memos)
 
   redirect '/memo-top'
 end
 
 get '/memos/:id/edit' do
-  @memo = Memo.open_json.find { |memo| memo[:memo_id] == escape(params[:id]) }
+  @memo = Memo.open_json.find { |memo| memo[:memo_id] == params[:id] }
 
   erb :memo_edit
 end
 
 patch '/memos/:id' do
-  json = Memo.open_json
-  index_num = json.find_index { |memo| memo[:memo_id] == params[:id] }
-  json[index_num][:title] = escape(params[:title])
-  json[index_num][:content] = escape(params[:content])
-  Memo.updata_json(json)
+  all_memos = Memo.open_json
+  index_num = all_memos.find_index { |memo| memo[:memo_id] == params[:id] }
+  all_memos[index_num][:title] = escape(params[:title])
+  all_memos[index_num][:content] = escape(params[:content])
+  Memo.updata_json(all_memos)
 
   redirect '/memo-top'
 end
