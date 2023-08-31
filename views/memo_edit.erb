@@ -1,13 +1,13 @@
 <form action="/memos/<%= @memo[:memo_id] %>" method="post">
   <div class="container m-2">
     <label for="title" class="form-label">メモタイトル</label>
-    <input type="text" name="title" id="title" class="form-control" value="<%= @memo[:title] %>">
+    <input type="text" id="title" name="title" class="form-control" value="<%= @memo[:title] %>">
   </div>
   <div class="container m-2">
-  <label for="content" class="form-label">内容</label>
-  <textarea type="text" name="content" id="content" class="form-control" rows="8"><%= @memo[:content] %></textarea>
-  <input id="hidden" type="hidden" name="_method" value="patch">
+    <label for="content" class="form-label">内容</label>
+    <textarea type="text" id="content" name="content" class="form-control" rows="8"><%= @memo[:content] %></textarea>
   </div>
+  <input id="hidden" type="hidden" name="_method" value="patch">
   <button type="submit" class="btn btn-primary m-2 ml-4">更新</button>
 </form>
 <a href="/memos/<%= @memo[:memo_id] %>"><button class="btn btn-primary m-2 ml-4">戻る</button></a>
