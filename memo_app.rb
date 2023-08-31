@@ -16,7 +16,7 @@ class Memo
 
   def self.open_json
     File.open('db.json', 'r') do |file|
-      open_json_file = JSON.load(file, symbolize_names: true)
+      open_json_file = JSON.load(file)
       if open_json_file.nil?
         []
       else
