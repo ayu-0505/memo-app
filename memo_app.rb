@@ -6,16 +6,12 @@ require 'securerandom'
 require 'cgi'
 
 class Memo
-  attr_accessor :memo_id, :title, :content, :h
+  attr_accessor :memo_id, :title, :content
 
   def initialize(memo_id, title, content)
     @memo_id = memo_id
     @title = title
     @content = content
-    @h = {}
-    @h[:memo_id] = @memo_id
-    @h[:title] = @title
-    @h[:content] = @content
   end
 
   def self.open_json
@@ -49,10 +45,8 @@ get '/memo-top' do
     memos << Memo.new(memo[:memo_id], memo[:title], memo[:content])
   end
   @memo_table = '<ul>'
-  memos.each do |memo|
-    @memo_table += "<p><a href =\"/memos/#{memo.memo_id}\"><li>#{memo.title}</a></p>"
-  end
-  @memo_table += '<ul>'
+  memos.each { |memo| @memo_table += "<li><a href=\"/memos/#{memo.memo_id}\">#{memo.title}</a></li>" }
+  @memo_table += '</ul>'
 
   erb :index
 end
@@ -63,20 +57,23 @@ end
 
 post '/memos/new' do
   unless params[:title] == ''
-    id = SecureRandom.uuid
-    title = escape(params[:title])
-    content = escape(params[:content])
-    new_memo = Memo.new(id, title, content)
+    new_memo = Memo.new(SecureRandom.uuid, escape(params[:title]), escape(params[:content]))
+    new_memo_for_json = {}
+    new_memo_for_json[:memo_id] = new_memo.memo_id
+    new_memo_for_json[:title] = new_memo.title
+    new_memo_for_json[:content] = new_memo.content
     json = Memo.open_json
-    json.push(new_memo.h)
+    json.push(new_memo_for_json)
     Memo.updata_json(json)
   end
+
   redirect '/memo-top'
 end
 
 get '/memos/:id' do
   @url_id = params[:id]
   @json = Memo.open_json
+
   erb :display_memo
 end
 
@@ -84,6 +81,7 @@ delete '/memos/del' do
   json = Memo.open_json
   json.delete_if { |memo| memo[:memo_id] == params[:id] }
   Memo.updata_json(json)
+
   redirect '/memo-top'
 end
 
@@ -101,4 +99,8 @@ patch '/memos/:id' do
   Memo.updata_json(json)
 
   redirect '/memo-top'
+end
+
+not_found do
+  '指定されたページは存在しません。/memo-appにアクセスしてください。'
 end
