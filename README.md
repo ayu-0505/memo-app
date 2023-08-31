@@ -32,10 +32,10 @@ Run the following command in your terminal.
 bundle exec ruby memo_app.rb
 ```
 
-Access the following HTML in your browser and use Memo-app.
+Access the following url in your browser and use Memo-app.
 
 ```
 http://127.0.0.1:4567/memo-top
 ```
 
-Type `Ctrl＋C` in your terminal when you want to stop the Memo-app.
+Type `Ctrl＋C` in your terminal when you want to stop Memo-app.
