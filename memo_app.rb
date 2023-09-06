@@ -32,12 +32,8 @@ class Memo
   end
 
   def self.insert(new_memo)
-    new_memo_to_list = {}
-    new_memo_to_list[:memo_id] = new_memo.memo_id
-    new_memo_to_list[:title] = new_memo.title
-    new_memo_to_list[:content] = new_memo.content
     all_memos = Memo.read_all
-    all_memos.push(new_memo_to_list)
+    all_memos.push(new_memo.convert_to_json)
     Memo.update_all(all_memos)
   end
 
@@ -50,6 +46,14 @@ class Memo
   def self.update_all(all_memos)
     File.open('db.json', 'w') { |file| file << JSON.pretty_generate(all_memos) }
   end
+
+  def convert_to_json
+    new_memo_to_list = {}
+    new_memo_to_list[:memo_id] = memo_id
+    new_memo_to_list[:title] = title
+    new_memo_to_list[:content] = content
+    new_memo_to_list
+  end
 end
 
 helpers do
@@ -59,12 +63,8 @@ helpers do
 end
 
 get '/' do
-  all_memos = []
-  Memo.read_all.each do |memo|
-    all_memos << Memo.new(memo[:memo_id], memo[:title], memo[:content])
-  end
   @memo_table = '<ul>'
-  all_memos.each { |memo| @memo_table += "<li><a href=\"/memos/#{memo.memo_id}\">#{memo.title}</a></li>" }
+  Memo.read_all.each { |memo| @memo_table += "<li><a href=\"/memos/#{memo[:memo_id]}\">#{memo[:title]}</a></li>" }
   @memo_table += '</ul>'
 
   erb :index
@@ -102,9 +102,9 @@ get '/memos/:id/edit' do
 end
 
 patch '/memos/:id' do
-  memo = Memo.new(params[:id], params[:title], params[:content])
-  Memo.delete(memo.memo_id)
-  Memo.insert(memo)
+  edit_memo = Memo.new(params[:id], params[:title], params[:content])
+  Memo.delete(edit_memo.memo_id)
+  Memo.insert(edit_memo)
   redirect '/'
 end
 
