@@ -64,12 +64,12 @@ helpers do
 end
 
 get '/' do
-  all_memos = []
+  @all_memos = []
   Memo.read_all.each do |memo|
-    all_memos << memo
+    @all_memos << memo
   end
   @memo_table = '<ul>'
-  all_memos.each { |memo| @memo_table += "<li><a href=\"/memos/#{memo.memo_id}\">#{memo.title}</a></li>" }
+  @all_memos.each { |memo| @memo_table += "<li><a href=\"/memos/#{escape(memo.memo_id)}\">#{escape(memo.title)}</a></li>" }
   @memo_table += '</ul>'
 
   erb :index
@@ -81,7 +81,7 @@ end
 
 post '/memos/new' do
   if params[:title] != ''
-    new_memo = Memo.new(SecureRandom.uuid, escape(params[:title]), escape(params[:content]))
+    new_memo = Memo.new(SecureRandom.uuid, params[:title], params[:content])
     Memo.insert(new_memo)
   end
 
