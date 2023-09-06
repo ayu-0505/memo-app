@@ -63,8 +63,12 @@ helpers do
 end
 
 get '/' do
+  all_memos = []
+  Memo.read_all.each do |memo|
+    all_memos << Memo.new(memo[:memo_id], memo[:title], memo[:content])
+  end
   @memo_table = '<ul>'
-  Memo.read_all.each { |memo| @memo_table += "<li><a href=\"/memos/#{memo[:memo_id]}\">#{memo[:title]}</a></li>" }
+  all_memos.each { |memo| @memo_table += "<li><a href=\"/memos/#{memo.memo_id}\">#{memo.title}</a></li>" }
   @memo_table += '</ul>'
 
   erb :index
