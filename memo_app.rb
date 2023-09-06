@@ -14,21 +14,21 @@ class Memo
     @content = content
   end
 
-  def self.open_json
+  def self.read_all
     File.open('db.json', 'r') do |file|
-      open_json_file = JSON.load(file)
-      if open_json_file.nil?
+      all_memos_in_db_file = JSON.parse(file.read)
+      if all_memos_in_db_file.nil?
         []
       else
-        open_json_file.map do |memo|
+        all_memos_in_db_file.map do |memo|
           memo.transform_keys(&:to_sym)
         end
       end
     end
   end
 
-  def self.updata_json(json)
-    File.open('db.json', 'w') { |file| file << JSON.pretty_generate(json) }
+  def self.update_db_file(all_memos)
+    File.open('db.json', 'w') { |file| file << JSON.pretty_generate(all_memos) }
   end
 end
 
@@ -40,7 +40,7 @@ end
 
 get '/' do
   all_memos = []
-  Memo.open_json.each do |memo|
+  Memo.read_all.each do |memo|
     all_memos << Memo.new(memo[:memo_id], memo[:title], memo[:content])
   end
   @memo_table = '<ul>'
@@ -61,16 +61,16 @@ post '/memos/new' do
     new_memo_to_list[:memo_id] = new_memo.memo_id
     new_memo_to_list[:title] = new_memo.title
     new_memo_to_list[:content] = new_memo.content
-    all_memos = Memo.open_json
+    all_memos = Memo.read_all
     all_memos.push(new_memo_to_list)
-    Memo.updata_json(all_memos)
+    Memo.update_db_file(all_memos)
   end
 
   redirect '/'
 end
 
 get '/memos/:id' do
-  display_memo = Memo.open_json.find { |memo| memo[:memo_id] == params[:id] }
+  display_memo = Memo.read_all.find { |memo| memo[:memo_id] == params[:id] }
   @memo_id = display_memo[:memo_id]
   @title = display_memo[:title]
   @content = display_memo[:content]
@@ -79,25 +79,25 @@ get '/memos/:id' do
 end
 
 delete '/memos/del' do
-  all_memos = Memo.open_json
+  all_memos = Memo.read_all
   all_memos.delete_if { |memo| memo[:memo_id] == params[:id] }
-  Memo.updata_json(all_memos)
+  Memo.update_db_file(all_memos)
 
   redirect '/'
 end
 
 get '/memos/:id/edit' do
-  @memo = Memo.open_json.find { |memo| memo[:memo_id] == params[:id] }
+  @memo = Memo.read_all.find { |memo| memo[:memo_id] == params[:id] }
 
   erb :memo_edit
 end
 
 patch '/memos/:id' do
-  all_memos = Memo.open_json
+  all_memos = Memo.read_all
   index_num = all_memos.find_index { |memo| memo[:memo_id] == params[:id] }
   all_memos[index_num][:title] = escape(params[:title])
   all_memos[index_num][:content] = escape(params[:content])
-  Memo.updata_json(all_memos)
+  Memo.update_db_file(all_memos)
 
   redirect '/'
 end
