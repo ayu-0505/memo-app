@@ -15,17 +15,18 @@ class Memo
   end
 
   def self.read_by_id(id)
-    Memo.read_all.find { |memo| memo[:memo_id] == id }
+    Memo.read_all.find { |memo| memo.memo_id == id }
   end
 
   def self.read_all
-    File.open('db.json', 'r') do |file|
-      all_memos_in_db_file = JSON.parse(file.read)
-      if all_memos_in_db_file.nil?
-        []
-      else
+    if File.empty?('db.json')
+      []
+    else
+      File.open('db.json', 'r') do |file|
+        all_memos_in_db_file = JSON.parse(file.read)
         all_memos_in_db_file.map do |memo|
-          memo.transform_keys(&:to_sym)
+          memo = memo.transform_keys(&:to_sym)
+          Memo.new(memo[:memo_id], memo[:title], memo[:content])
         end
       end
     end
@@ -33,18 +34,18 @@ class Memo
 
   def self.insert(new_memo)
     all_memos = Memo.read_all
-    all_memos.push(new_memo.convert_to_json)
+    all_memos.push(new_memo)
     Memo.update_all(all_memos)
   end
 
   def self.delete(id)
     all_memos = Memo.read_all
-    all_memos.delete_if { |memo| memo[:memo_id] == id }
+    all_memos.delete_if { |memo| memo.memo_id == id }
     Memo.update_all(all_memos)
   end
 
   def self.update_all(all_memos)
-    File.open('db.json', 'w') { |file| file << JSON.pretty_generate(all_memos) }
+    File.open('db.json', 'w') { |file| file << JSON.pretty_generate(all_memos.map(&:convert_to_json)) }
   end
 
   def convert_to_json
@@ -65,7 +66,7 @@ end
 get '/' do
   all_memos = []
   Memo.read_all.each do |memo|
-    all_memos << Memo.new(memo[:memo_id], memo[:title], memo[:content])
+    all_memos << memo
   end
   @memo_table = '<ul>'
   all_memos.each { |memo| @memo_table += "<li><a href=\"/memos/#{memo.memo_id}\">#{memo.title}</a></li>" }
@@ -109,6 +110,7 @@ patch '/memos/:id' do
   edit_memo = Memo.new(params[:id], params[:title], params[:content])
   Memo.delete(edit_memo.memo_id)
   Memo.insert(edit_memo)
+
   redirect '/'
 end
 
