@@ -27,6 +27,16 @@ class Memo
     end
   end
 
+  def self.insert(new_memo)
+    new_memo_to_list = {}
+    new_memo_to_list[:memo_id] = new_memo.memo_id
+    new_memo_to_list[:title] = new_memo.title
+    new_memo_to_list[:content] = new_memo.content
+    all_memos = Memo.read_all
+    all_memos.push(new_memo_to_list)
+    Memo.update_db_file(all_memos)
+  end
+
   def self.update_db_file(all_memos)
     File.open('db.json', 'w') { |file| file << JSON.pretty_generate(all_memos) }
   end
@@ -57,13 +67,7 @@ end
 post '/memos/new' do
   if params[:title] != ''
     new_memo = Memo.new(SecureRandom.uuid, escape(params[:title]), escape(params[:content]))
-    new_memo_to_list = {}
-    new_memo_to_list[:memo_id] = new_memo.memo_id
-    new_memo_to_list[:title] = new_memo.title
-    new_memo_to_list[:content] = new_memo.content
-    all_memos = Memo.read_all
-    all_memos.push(new_memo_to_list)
-    Memo.update_db_file(all_memos)
+    Memo.insert(new_memo)
   end
 
   redirect '/'
