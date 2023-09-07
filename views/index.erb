@@ -1,2 +1,11 @@
 <a href='/memos/new'><button class="btn btn-primary m-2 ml-4">追加</button></a>
-<h2><%= @memo_table %></h2>
+
+<h2>
+  <ul>
+    <% @all_memos.each do |memo| %>
+    <%= "<li><a href=\"/memos/#{memo.memo_id}\">" %>
+    <%== memo.title%>
+    <% "</a></li>" %>
+   <% end %>
+  </ul>
+</h2>

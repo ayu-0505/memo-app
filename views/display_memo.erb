@@ -1,9 +1,9 @@
 <br>
-<div class="container border m-2"><%= @title %></div>
-<div class="container border m-2"><%= @content %></div>
-<a href="/memos/<%= @memo_id %>/edit"><button class="btn btn-primary m-2">変更</button></a>
+<div class="container border m-2"><%== @memo.title %></div>
+<div class="container border m-2"><%= escape_with_converting_line_breaks(@memo.content) %></div>
+<a href="/memos/<%= @memo.memo_id %>/edit"><button class="btn btn-primary m-2">変更</button></a>
 <form method="post" action="/memos/del">
-  <input type="hidden" name="id" value="<%= @memo_id %>">
+  <input type="hidden" name="id" value="<%= @memo.memo_id %>">
   <input type="hidden" name="_method" value="delete">
   <button type="submit" class="btn btn-primary m-2">削除</button>
 </form>

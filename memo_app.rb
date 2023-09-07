@@ -3,7 +3,7 @@
 require 'sinatra'
 require 'sinatra/reloader'
 require 'securerandom'
-require 'cgi'
+require 'cgi/escape'
 
 class Memo
   attr_accessor :memo_id, :title, :content
@@ -38,7 +38,7 @@ class Memo
     Memo.update_all(all_memos)
   end
 
-  def self.delete(id)
+  def self.delete_by_id(id)
     all_memos = Memo.read_all
     all_memos.delete_if { |memo| memo.memo_id == id }
     Memo.update_all(all_memos)
@@ -49,17 +49,17 @@ class Memo
   end
 
   def convert_to_json
-    new_memo_to_list = {}
-    new_memo_to_list[:memo_id] = memo_id
-    new_memo_to_list[:title] = title
-    new_memo_to_list[:content] = content
-    new_memo_to_list
+    memo_in_json_form = {}
+    memo_in_json_form[:memo_id] = memo_id
+    memo_in_json_form[:title] = title
+    memo_in_json_form[:content] = content
+    memo_in_json_form
   end
 end
 
 helpers do
-  def escape(text)
-    CGI.escapeHTML(text)
+  def escape_with_converting_line_breaks(text)
+    CGI.escapeHTML(text).gsub(/\r\n|\r|\n/, '<br>')
   end
 end
 
@@ -68,9 +68,6 @@ get '/' do
   Memo.read_all.each do |memo|
     @all_memos << memo
   end
-  @memo_table = '<ul>'
-  @all_memos.each { |memo| @memo_table += "<li><a href=\"/memos/#{escape(memo.memo_id)}\">#{escape(memo.title)}</a></li>" }
-  @memo_table += '</ul>'
 
   erb :index
 end
@@ -95,7 +92,7 @@ get '/memos/:id' do
 end
 
 delete '/memos/del' do
-  Memo.delete(params[:id])
+  Memo.delete_by_id(params[:id])
 
   redirect '/'
 end
@@ -108,10 +105,14 @@ end
 
 patch '/memos/:id' do
   edit_memo = Memo.new(params[:id], params[:title], params[:content])
-  Memo.delete(edit_memo.memo_id)
+  Memo.delete_by_id(edit_memo.memo_id)
   Memo.insert(edit_memo)
 
   redirect '/'
+end
+
+get '/test' do
+erb :test
 end
 
 not_found do
