@@ -112,7 +112,7 @@ patch '/memos/:id' do
 end
 
 get '/test' do
-erb :test
+  erb :test
 end
 
 not_found do
