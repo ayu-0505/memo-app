@@ -63,7 +63,7 @@ helpers do
   end
 end
 
-get '/' do
+get '/memos' do
   @all_memos = []
   Memo.read_all.each do |memo|
     @all_memos << memo
@@ -82,7 +82,7 @@ post '/memos/new' do
     Memo.insert(new_memo)
   end
 
-  redirect '/'
+  redirect '/memos'
 end
 
 get '/memos/:id' do
@@ -94,7 +94,7 @@ end
 delete '/memos/del' do
   Memo.delete_by_id(params[:id])
 
-  redirect '/'
+  redirect '/memos'
 end
 
 get '/memos/:id/edit' do
@@ -108,13 +108,9 @@ patch '/memos/:id' do
   Memo.delete_by_id(edit_memo.memo_id)
   Memo.insert(edit_memo)
 
-  redirect '/'
-end
-
-get '/test' do
-  erb :test
+  redirect '/memos'
 end
 
 not_found do
-  '指定されたページは存在しません。<a href="/">トップページ</a>にアクセスしてください。'
+  '指定されたページは存在しません。<a href="/memos">トップページ</a>にアクセスしてください。'
 end
