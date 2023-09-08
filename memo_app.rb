@@ -49,11 +49,11 @@ class Memo
   end
 
   def convert_to_json
-    memo_in_json_form = {}
-    memo_in_json_form[:memo_id] = memo_id
-    memo_in_json_form[:title] = title
-    memo_in_json_form[:content] = content
-    memo_in_json_form
+    {
+      memo_id:,
+      title:,
+      content:
+    }
   end
 end
 
