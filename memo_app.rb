@@ -76,7 +76,7 @@ get '/memos/new' do
   erb :new_memo
 end
 
-post '/memos/new' do
+post '/memos' do
   if params[:title] != ''
     new_memo = Memo.new(SecureRandom.uuid, params[:title], params[:content])
     Memo.insert(new_memo)
@@ -91,8 +91,8 @@ get '/memos/:id' do
   erb :display_memo
 end
 
-delete '/memos/del' do
-  Memo.delete_by_id(params[:id])
+delete '/memos/:id' do
+  Memo.delete_by_id(params[:del_id])
 
   redirect '/memos'
 end
