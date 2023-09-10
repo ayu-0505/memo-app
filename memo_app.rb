@@ -25,8 +25,7 @@ class Memo
       File.open('db.json', 'r') do |file|
         all_memos_in_db_file = JSON.parse(file.read)
         all_memos_in_db_file.map do |memo|
-          memo = memo.transform_keys(&:to_sym)
-          Memo.new(memo[:memo_id], memo[:title], memo[:content])
+          Memo.new(memo['memo_id'], memo['title'], memo['content'])
         end
       end
     end
