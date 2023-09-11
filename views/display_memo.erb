@@ -1,0 +1,10 @@
+<br>
+<div class="container border m-2"><%== @memo.title %></div>
+<div class="container border m-2"><%= escape_with_converting_line_breaks(@memo.content) %></div>
+<a href="/memos/<%= @memo.memo_id %>/edit"><button class="btn btn-primary m-2">変更</button></a>
+<form method="post" action="/memos/<%= @memo.memo_id %>">
+  <input type="hidden" name="del_id" value="<%= @memo.memo_id %>">
+  <input type="hidden" name="_method" value="delete">
+  <button type="submit" class="btn btn-primary m-2">削除</button>
+</form>
+<a href="/memos"><button class="btn btn-primary m-2">戻る</button></a>
