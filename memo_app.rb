@@ -6,17 +6,13 @@ require 'sinatra/reloader'
 require 'securerandom'
 require 'cgi/escape'
 
-# host = '{127.0.0.1}'
-# port = '{5432}'
-# db = '{memo_app_db}'
-# user = '{user}'
-# password = '{パスワード}'
-# connection = PG::Connection.new(host: host, port: port, dbname: db, user: user, password: password)
-
-
 class Memo
   attr_accessor :memo_id, :title, :content
   @@conn = PG::Connection.open(:dbname => 'memo_app_db')
+  @@conn.prepare("read_by_id", "SELECT * FROM memos WHERE memo_id = $1")
+  @@conn.prepare("insert","INSERT INTO memos VALUES ($1, $2, $3)") #$1 = memo_id, $2 = title, $3 = content
+  @@conn.prepare("delete","DELETE FROM memos WHERE memo_id = $1" )
+  @@conn.prepare("update","UPDATE memos SET title = $1, content = $2 WHERE memo_id = $3")
 
   def initialize(memo_id, title, content)
     @memo_id = memo_id
@@ -25,8 +21,8 @@ class Memo
   end
 
   def self.read_by_id(id)
-     @@conn.exec( "SELECT * FROM memo WHERE memo_id = '#{id}'" ) do |memo|
-       Memo.new(memo[0]['memo_id'],memo[0]['title'], memo[0]['content'])
+     @@conn.exec_prepared("read_by_id",[id]) do |memo|
+       Memo.new(memo[0]['memo_id'], memo[0]['title'], memo[0]['content'])
      end
   end
 
@@ -42,15 +38,15 @@ class Memo
   end
 
   def self.insert(new_memo)
-    @@conn.exec("INSERT INTO memo VALUES ('#{new_memo.memo_id}', '#{new_memo.title}', '#{new_memo.content}')")
+    @@conn.exec_prepared("insert",[ new_memo.memo_id, new_memo.title, new_memo.content])
   end
 
   def self.delete_by_id(id)
-    @@conn.exec("DELETE FROM memo WHERE memo_id = '#{id}'" )
+    @@conn.exec_prepared("delete", [id] )
   end
 
   def self.update(edit_memo)
-    @@conn.exec("UPDATE memo SET title = '#{edit_memo.title}', content = '#{edit_memo.content}' WHERE memo_id = '#{edit_memo.memo_id}'")
+    @@conn.exec_prepared("update",[ edit_memo.title, edit_memo.content, edit_memo.memo_id])
   end
 end
 
