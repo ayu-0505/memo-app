@@ -1,12 +1,22 @@
 # frozen_string_literal: true
 
+require 'pg'
 require 'sinatra'
 require 'sinatra/reloader'
 require 'securerandom'
 require 'cgi/escape'
 
+# host = '{127.0.0.1}'
+# port = '{5432}'
+# db = '{memo_app_db}'
+# user = '{user}'
+# password = '{パスワード}'
+# connection = PG::Connection.new(host: host, port: port, dbname: db, user: user, password: password)
+
+
 class Memo
   attr_accessor :memo_id, :title, :content
+  @@conn = PG::Connection.open(:dbname => 'memo_app_db')
 
   def initialize(memo_id, title, content)
     @memo_id = memo_id
@@ -15,44 +25,32 @@ class Memo
   end
 
   def self.read_by_id(id)
-    Memo.read_all.find { |memo| memo.memo_id == id }
+     @@conn.exec( "SELECT * FROM memo WHERE memo_id = '#{id}'" ) do |memo|
+       Memo.new(memo[0]['memo_id'],memo[0]['title'], memo[0]['content'])
+     end
   end
 
   def self.read_all
-    if File.empty?('db.json')
+    get_all = @@conn.exec( "SELECT * FROM memo" )
+    if get_all.count == 0
       []
     else
-      File.open('db.json', 'r') do |file|
-        all_memos_in_db_file = JSON.parse(file.read)
-        all_memos_in_db_file.map do |memo|
-          Memo.new(memo['memo_id'], memo['title'], memo['content'])
-        end
+       get_all.map do |memo|
+        Memo.new(memo['memo_id'],memo['title'], memo['content'])
       end
     end
   end
 
   def self.insert(new_memo)
-    all_memos = Memo.read_all
-    all_memos.push(new_memo)
-    Memo.update_all(all_memos)
+    @@conn.exec("INSERT INTO memo VALUES ('#{new_memo.memo_id}', '#{new_memo.title}', '#{new_memo.content}')")
   end
 
   def self.delete_by_id(id)
-    all_memos = Memo.read_all
-    all_memos.delete_if { |memo| memo.memo_id == id }
-    Memo.update_all(all_memos)
+    @@conn.exec("DELETE FROM memo WHERE memo_id = '#{id}'" )
   end
 
-  def self.update_all(all_memos)
-    File.open('db.json', 'w') { |file| file << JSON.pretty_generate(all_memos.map(&:convert_to_json)) }
-  end
-
-  def convert_to_json
-    {
-      memo_id:,
-      title:,
-      content:
-    }
+  def self.update(edit_memo)
+    @@conn.exec("UPDATE memo SET title = '#{edit_memo.title}', content = '#{edit_memo.content}' WHERE memo_id = '#{edit_memo.memo_id}'")
   end
 end
 
@@ -103,9 +101,10 @@ get '/memos/:id/edit' do
 end
 
 patch '/memos/:id' do
-  edit_memo = Memo.new(params[:id], params[:title], params[:content])
-  Memo.delete_by_id(edit_memo.memo_id)
-  Memo.insert(edit_memo)
+  if params[:title] !=''
+    edit_memo = Memo.new(params[:id], params[:title], params[:content])
+    Memo.update(edit_memo)
+  end
 
   redirect '/memos'
 end
