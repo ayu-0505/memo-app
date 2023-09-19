@@ -26,7 +26,7 @@ class Memo
   end
 
   def self.read_all
-    get_all = @@conn.exec('SELECT * FROM memos')
+    get_all = @conn.exec('SELECT * FROM memos')
     if get_all.count.zero?
       []
     else
