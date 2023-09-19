@@ -103,5 +103,5 @@ patch '/memos/:id' do
 end
 
 not_found do
-  '指定されたページは存在しません。<a href="/memos">トップページ</a>にアクセスしてください。'
+  '指定されたページは存在しません。こちらの<a href="/memos">トップページ</a>にアクセスしてください。'
 end
