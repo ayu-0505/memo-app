@@ -14,6 +14,7 @@ class Memo
 
     @conn = PG::Connection.open(dbname: 'memo_app_db')
     define_prepared_statements(@conn)
+    @conn
   end
 
   def self.define_prepared_statements(conn)
