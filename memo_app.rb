@@ -9,11 +9,19 @@ require 'cgi/escape'
 class Memo
   attr_accessor :memo_id, :title, :content
 
-  @conn = PG::Connection.open(dbname: 'memo_app_db')
-  @conn.prepare('read_by_id', 'SELECT * FROM memos WHERE memo_id = $1')
-  @conn.prepare('insert', 'INSERT INTO memos VALUES ($1, $2, $3)') # $1 = memo_id, $2 = title, $3 = content
-  @conn.prepare('delete', 'DELETE FROM memos WHERE memo_id = $1')
-  @conn.prepare('update', 'UPDATE memos SET title = $1, content = $2 WHERE memo_id = $3')
+  def self.conn
+    return @conn if @conn
+
+    @conn = PG::Connection.open(dbname: 'memo_app_db')
+    define_prepared_statements(@conn)
+  end
+
+  def self.define_prepared_statements(conn)
+    conn.prepare('read_by_id', 'SELECT * FROM memos WHERE memo_id = $1')
+    conn.prepare('insert', 'INSERT INTO memos VALUES ($1, $2, $3)') # $1 = memo_id, $2 = title, $3 = content
+    conn.prepare('delete', 'DELETE FROM memos WHERE memo_id = $1')
+    conn.prepare('update', 'UPDATE memos SET title = $1, content = $2 WHERE memo_id = $3')
+  end
 
   def initialize(memo_id, title, content)
     @memo_id = memo_id
@@ -22,11 +30,11 @@ class Memo
   end
 
   def self.read_by_id(id)
-    @conn.exec_prepared('read_by_id', [id]) { |memo| Memo.new(memo[0]['memo_id'], memo[0]['title'], memo[0]['content']) }
+    conn.exec_prepared('read_by_id', [id]) { |memo| Memo.new(memo[0]['memo_id'], memo[0]['title'], memo[0]['content']) }
   end
 
   def self.read_all
-    get_all = @conn.exec('SELECT * FROM memos')
+    get_all = conn.exec('SELECT * FROM memos')
     if get_all.count.zero?
       []
     else
@@ -35,15 +43,15 @@ class Memo
   end
 
   def self.insert(new_memo)
-    @conn.exec_prepared('insert', [new_memo.memo_id, new_memo.title, new_memo.content])
+    conn.exec_prepared('insert', [new_memo.memo_id, new_memo.title, new_memo.content])
   end
 
   def self.delete_by_id(id)
-    @conn.exec_prepared('delete', [id])
+    conn.exec_prepared('delete', [id])
   end
 
   def self.update(edit_memo)
-    @conn.exec_prepared('update', [edit_memo.title, edit_memo.content, edit_memo.memo_id])
+    conn.exec_prepared('update', [edit_memo.title, edit_memo.content, edit_memo.memo_id])
   end
 end
 
