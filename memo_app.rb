@@ -6,23 +6,18 @@ require 'sinatra/reloader'
 require 'securerandom'
 require 'cgi/escape'
 
+def self.define_prepared_statements(conn)
+  conn.prepare('read_by_id', 'SELECT * FROM memos WHERE memo_id = $1')
+  conn.prepare('insert', 'INSERT INTO memos VALUES ($1, $2, $3)') # $1 = memo_id, $2 = title, $3 = content
+  conn.prepare('delete', 'DELETE FROM memos WHERE memo_id = $1')
+  conn.prepare('update', 'UPDATE memos SET title = $1, content = $2 WHERE memo_id = $3')
+end
+
+conn = PG::Connection.open(dbname: 'memo_app_db')
+define_prepared_statements(conn)
+
 class Memo
   attr_accessor :memo_id, :title, :content
-
-  def self.conn
-    return @conn if @conn
-
-    @conn = PG::Connection.open(dbname: 'memo_app_db')
-    define_prepared_statements(@conn)
-    @conn
-  end
-
-  def self.define_prepared_statements(conn)
-    conn.prepare('read_by_id', 'SELECT * FROM memos WHERE memo_id = $1')
-    conn.prepare('insert', 'INSERT INTO memos VALUES ($1, $2, $3)') # $1 = memo_id, $2 = title, $3 = content
-    conn.prepare('delete', 'DELETE FROM memos WHERE memo_id = $1')
-    conn.prepare('update', 'UPDATE memos SET title = $1, content = $2 WHERE memo_id = $3')
-  end
 
   def initialize(memo_id, title, content)
     @memo_id = memo_id
@@ -30,11 +25,11 @@ class Memo
     @content = content
   end
 
-  def self.read_by_id(id)
+  def self.read_by_id(conn, id)
     conn.exec_prepared('read_by_id', [id]) { |memo| Memo.new(memo[0]['memo_id'], memo[0]['title'], memo[0]['content']) }
   end
 
-  def self.read_all
+  def self.read_all(conn)
     get_all = conn.exec('SELECT * FROM memos')
     if get_all.count.zero?
       []
@@ -43,15 +38,15 @@ class Memo
     end
   end
 
-  def self.insert(new_memo)
+  def self.insert(conn, new_memo)
     conn.exec_prepared('insert', [new_memo.memo_id, new_memo.title, new_memo.content])
   end
 
-  def self.delete_by_id(id)
+  def self.delete_by_id(conn, id)
     conn.exec_prepared('delete', [id])
   end
 
-  def self.update(edit_memo)
+  def self.update(conn, edit_memo)
     conn.exec_prepared('update', [edit_memo.title, edit_memo.content, edit_memo.memo_id])
   end
 end
@@ -64,7 +59,7 @@ end
 
 get '/memos' do
   @all_memos = []
-  Memo.read_all.each do |memo|
+  Memo.read_all(conn).each do |memo|
     @all_memos << memo
   end
 
@@ -78,26 +73,26 @@ end
 post '/memos' do
   if params[:title] != ''
     new_memo = Memo.new(SecureRandom.uuid, params[:title], params[:content])
-    Memo.insert(new_memo)
+    Memo.insert(conn, new_memo)
   end
 
   redirect '/memos'
 end
 
 get '/memos/:id' do
-  @memo = Memo.read_by_id(params[:id])
+  @memo = Memo.read_by_id(conn, params[:id])
 
   erb :display_memo
 end
 
 delete '/memos/:id' do
-  Memo.delete_by_id(params[:del_id])
+  Memo.delete_by_id(conn, params[:del_id])
 
   redirect '/memos'
 end
 
 get '/memos/:id/edit' do
-  @memo = Memo.read_by_id(params[:id])
+  @memo = Memo.read_by_id(conn, params[:id])
 
   erb :memo_edit
 end
@@ -105,7 +100,7 @@ end
 patch '/memos/:id' do
   if params[:title] != ''
     edit_memo = Memo.new(params[:id], params[:title], params[:content])
-    Memo.update(edit_memo)
+    Memo.update(conn, edit_memo)
   end
 
   redirect '/memos'
