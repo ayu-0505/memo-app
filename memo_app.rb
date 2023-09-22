@@ -1,9 +1,20 @@
 # frozen_string_literal: true
 
+require 'pg'
 require 'sinatra'
 require 'sinatra/reloader'
 require 'securerandom'
 require 'cgi/escape'
+
+def define_prepared_statements(conn)
+  conn.prepare('read_by_id', 'SELECT * FROM memos WHERE memo_id = $1')
+  conn.prepare('insert', 'INSERT INTO memos VALUES ($1, $2, $3)') # $1 = memo_id, $2 = title, $3 = content
+  conn.prepare('delete', 'DELETE FROM memos WHERE memo_id = $1')
+  conn.prepare('update', 'UPDATE memos SET title = $1, content = $2 WHERE memo_id = $3')
+end
+
+conn = PG::Connection.open(dbname: 'memo_app_db')
+define_prepared_statements(conn)
 
 class Memo
   attr_accessor :memo_id, :title, :content
@@ -14,45 +25,29 @@ class Memo
     @content = content
   end
 
-  def self.read_by_id(id)
-    Memo.read_all.find { |memo| memo.memo_id == id }
+  def self.read_by_id(conn, id)
+    conn.exec_prepared('read_by_id', [id]) { |memo| Memo.new(memo[0]['memo_id'], memo[0]['title'], memo[0]['content']) }
   end
 
-  def self.read_all
-    if File.empty?('db.json')
+  def self.read_all(conn)
+    get_all = conn.exec('SELECT * FROM memos')
+    if get_all.count.zero?
       []
     else
-      File.open('db.json', 'r') do |file|
-        all_memos_in_db_file = JSON.parse(file.read)
-        all_memos_in_db_file.map do |memo|
-          Memo.new(memo['memo_id'], memo['title'], memo['content'])
-        end
-      end
+      get_all.map { |memo| Memo.new(memo['memo_id'], memo['title'], memo['content']) }
     end
   end
 
-  def self.insert(new_memo)
-    all_memos = Memo.read_all
-    all_memos.push(new_memo)
-    Memo.update_all(all_memos)
+  def self.insert(conn, new_memo)
+    conn.exec_prepared('insert', [new_memo.memo_id, new_memo.title, new_memo.content])
   end
 
-  def self.delete_by_id(id)
-    all_memos = Memo.read_all
-    all_memos.delete_if { |memo| memo.memo_id == id }
-    Memo.update_all(all_memos)
+  def self.delete_by_id(conn, id)
+    conn.exec_prepared('delete', [id])
   end
 
-  def self.update_all(all_memos)
-    File.open('db.json', 'w') { |file| file << JSON.pretty_generate(all_memos.map(&:convert_to_json)) }
-  end
-
-  def convert_to_json
-    {
-      memo_id:,
-      title:,
-      content:
-    }
+  def self.update(conn, edit_memo)
+    conn.exec_prepared('update', [edit_memo.title, edit_memo.content, edit_memo.memo_id])
   end
 end
 
@@ -64,7 +59,7 @@ end
 
 get '/memos' do
   @all_memos = []
-  Memo.read_all.each do |memo|
+  Memo.read_all(conn).each do |memo|
     @all_memos << memo
   end
 
@@ -78,38 +73,39 @@ end
 post '/memos' do
   if params[:title] != ''
     new_memo = Memo.new(SecureRandom.uuid, params[:title], params[:content])
-    Memo.insert(new_memo)
+    Memo.insert(conn, new_memo)
   end
 
   redirect '/memos'
 end
 
 get '/memos/:id' do
-  @memo = Memo.read_by_id(params[:id])
+  @memo = Memo.read_by_id(conn, params[:id])
 
   erb :display_memo
 end
 
 delete '/memos/:id' do
-  Memo.delete_by_id(params[:del_id])
+  Memo.delete_by_id(conn, params[:del_id])
 
   redirect '/memos'
 end
 
 get '/memos/:id/edit' do
-  @memo = Memo.read_by_id(params[:id])
+  @memo = Memo.read_by_id(conn, params[:id])
 
   erb :memo_edit
 end
 
 patch '/memos/:id' do
-  edit_memo = Memo.new(params[:id], params[:title], params[:content])
-  Memo.delete_by_id(edit_memo.memo_id)
-  Memo.insert(edit_memo)
+  if params[:title] != ''
+    edit_memo = Memo.new(params[:id], params[:title], params[:content])
+    Memo.update(conn, edit_memo)
+  end
 
   redirect '/memos'
 end
 
 not_found do
-  '指定されたページは存在しません。<a href="/memos">トップページ</a>にアクセスしてください。'
+  '指定されたページは存在しません。こちらの<a href="/memos">トップページ</a>にアクセスしてください。'
 end
