@@ -6,7 +6,7 @@ require 'sinatra/reloader'
 require 'securerandom'
 require 'cgi/escape'
 
-def self.define_prepared_statements(conn)
+def define_prepared_statements(conn)
   conn.prepare('read_by_id', 'SELECT * FROM memos WHERE memo_id = $1')
   conn.prepare('insert', 'INSERT INTO memos VALUES ($1, $2, $3)') # $1 = memo_id, $2 = title, $3 = content
   conn.prepare('delete', 'DELETE FROM memos WHERE memo_id = $1')
